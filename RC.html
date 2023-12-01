@@ -1,0 +1,239 @@
+
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>exp</title>
+  <script src="jsPsych-6.1.0/jspsych.js"></script>
+  <script src="jsPsych-6.1.0/plugins/jspsych-fullscreen.js"></script>
+  <script src="jsPsych-6.1.0/plugins/jspsych-html-keyboard-response.js"></script>
+  <script src="jsPsych-6.1.0/plugins/jspsych-html-button-response.js"></script>
+  <script src="jsPsych-6.1.0/plugins/jspsych-survey-text.js"></script>
+  <script src="jsPsych-6.1.0/plugins/jspsych-survey-likert.js"></script>
+  <script src="jsPsych-6.1.0/plugins/jspsych-survey-multi-choice.js"></script>
+  <script src="js/jspsych-html-slider-response_required.js"></script>
+  <script src="jsPsych-6.1.0/plugins/jspsych-external-html.js"></script>
+  <script src="jsPsych-6.1.0/plugins/jspsych-html-mouse-response.js"></script>
+  <script src="js/jquery.min.js"></script>
+  <script src="js/lodash.min.js"></script>
+  <script src="js/firebase.js"></script>
+  <link href="jsPsych-6.1.0/css/jspsych.css" rel="stylesheet" type="text/css">
+  <style>
+    body {
+      cursor: default;
+    }
+    .jspsych-content-wrapper {
+      width: 900px;
+      height: 1500px;
+    }
+    .paringsImgsLeft,
+    .paringsImgsRight {
+      height: 320px;
+      margin: 0px;
+    }
+    .imgInstr {
+      height: 150px; 
+    }
+    .paringsImgsLeft {
+      margin-right: 10px;
+    }
+    .imgJudge {
+      position: fixed;
+      width: 15%; 
+      margin: 0px;
+      padding: 0px;
+      top: 0px;
+      left:41%;
+      z-index: 2;
+    }
+    .imgBack {
+      position: fixed;
+      width: 70%; 
+      margin: 0px;
+      padding: 0px;
+      top: 0px;
+      left:15%;
+      z-index: 2;
+    }
+    .displayInstr {
+      height: 130px;
+    }
+    .rcimg-02{
+      cursor: pointer;
+    }
+    .rcimg-02 {
+      margin-top: 25px;
+      margin-bottom: 25px;
+      margin-left: 5px;
+      margin-right: 5px;
+    }
+    .rcimg-02:hover {
+      box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+    }    
+  </style>
+</head>
+<body></body>
+<script>
+
+  /* Parameters for the Reverse Correlation task */
+  var numOfPairsRC02 = 250;  // Total number of pair images images (inv & ori) = 250
+
+  /* Initial variables */
+  var timeline = [];
+  var preloadimages = [];
+  var id = jsPsych.randomization.randomID(15)
+
+  /* EXPERIMENT ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+  /* Fullscreen mode & Consent */
+    var activeFullscreen = {
+      message: "",
+      button_label: "Cliquez ici pour commencer",
+      type: 'fullscreen',
+      fullscreen_mode: true,
+      delay_after: 200,
+    };
+
+  /* RC instructions */
+     var RCinst1 = {
+        type: "html-keyboard-response",
+        post_trial_gap: 300,
+        choices: [32],
+        stimulus: function () {
+            var html = "";
+            html += "<h1>Reverse correlation</h1>";
+            html += "<p class = 'justify'>Votre tâche sera de sélectionner le visage qui a l'air le plus sympa.</p>";
+            html += "<p class = 'justify'>Essayez de ne pas prendre plus de 1-2 secondes pour sélectionner le visage. </p>";
+            html += "<p></br>Appuyez sur <span class='light-keys'><kbd>espace</kbd></span> pour continuer</p>";
+            return html;
+        },
+    };
+
+
+
+// RC ---------------------------------------------------------------------------------------------------------------
+    /* Generate RC trials */
+    var imgsRC02 = _.range(1, numOfPairsRC02 + 1); // generate numerical sequence
+
+    imgsRC02 = imgsRC02.map(function (e) { return ['./img/faceOri' + e + '.jpg', './img/faceInv' + e + '.jpg'] }); // pairs ori and inv
+    imgsRC02 = _.flattenDeep(imgsRC02);
+
+    // preload
+    preloadimages.push(imgsRC02);
+
+    // Full randomization:
+    // imgsRC02 = _.shuffle(imgsRC02);
+
+    // Full randomization but keep inv ori in the same trial
+    // imgsRC02 = _.flattenDeep(_.shuffle(_.chunk(imgsRC02, 2)));
+
+    // Create chunks
+    imgsRC02 = _.chunk(imgsRC02, 02); // 1 ori + 1 inv = 2 faces per trial
+
+    // Full randomization but keep inv ori in the same trial
+    // imgsRC02.map(function (e, i) { imgsRC02[i] = _.shuffle(e) });
+
+    var RC02_stim = [];
+    imgsRC02.map(function (e) { RC02_stim.push({ trialImgs: e }) });
+
+    /* RC */
+    var cssRC = "rcimg-02";
+    var imgWidth = 512;
+    var RCstim = RC02_stim;
+    var numOfPairs = numOfPairsRC02;
+    
+    var i = 1;
+    var RC1 = {
+        timeline_variables: RCstim,
+        randomize_order: true,
+        data: {
+            task: 'RC1',
+            numOfPairs: numOfPairs
+        },
+        timeline: [{
+            type: 'html-mouse-response',
+            on_load: function () {
+                        $('.jspsych-content-wrapper').css({ "width": "1100px" });
+                        $('.jspsych-content').css({ "max-width": "100%" });
+            },
+            stimulus: function () {
+                html = "";
+                html += "<p>Sélectionnez le visage qui a l'air le plus sympa :</p>";
+                jsPsych.timelineVariable('trialImgs', true).map(function (e) {
+                    html += "<img class='" + cssRC + "' src='" + e + "'>";
+                });
+                html += "</br>Essai : " + i + "/" + numOfPairs + "</br>";
+                i += 1;
+                return html;
+            },
+        }]
+    };
+
+
+ /* EXIT FULLSCREEN MODE */
+  var exitFullscreen = {
+    type: 'fullscreen',
+    fullscreen_mode: false
+  };
+
+    /* DEBRIEF */
+  var debrief = [];
+  debrief += "<h1>Terminé, merci !</h1>";
+
+
+  /* TIMELINES ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+  timeline.push(activeFullscreen);
+  timeline.push(RCinst1);
+  timeline.push(RC1);
+  timeline.push(exitFullscreen);
+
+  preloadimages = _.flattenDeep(preloadimages);
+
+  timeline = _.flattenDeep(timeline); // do not remove this!
+
+  /* INITIALISE EXP  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
+  jsPsych.init({
+    timeline: timeline,
+    preload_images: preloadimages,
+    max_load_time: 500*1000,
+    exclusions: {
+      min_width: 1100,
+      min_height: 600,
+      max_width: 1600,
+      max_height: 900,
+    },
+    on_finish: function (data) {
+      $("#jspsych-content").html("<img src='https://i.gifer.com/4V0b.gif'>");
+
+
+      /* Initialize Firebase */
+      var config = {
+        apiKey: "AIzaSyAPTEPrT8V9T1-GouWXnW6jknK3brmagJs",
+        databaseURL: "https://postdocgent.firebaseio.com/"
+      };
+
+      firebase.initializeApp(config);
+      var database = firebase.database();
+
+      /* jsPsych: add data to every trial */
+      jsPsych.data.addProperties({
+        id: id,
+        totalTime: jsPsych.totalTime()
+      });
+
+        var dataRC = jsPsych.data.get().filterCustom(function (x) {
+          return x.task == "RC1" || x.task == "RC2"
+        }).csv();
+
+      /* Send data to Firebase */
+      database
+        .ref("Test_OutilsSociale/" + id + "/")
+        .update({ dataRC })
+        .then(function () {
+              console.log("Data sent!");
+              $("#jspsych-content").html(debrief);        });
+    }
+  });
+</script>
+
+</html>
